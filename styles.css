@@ -1,0 +1,278 @@
+/* --- ESTILOS BASE Y FONDO (Naranja Cálido) --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    /* Gradiente radial con tonos ámbar y terracota oscuro */
+    background: radial-gradient(circle, #ff7300 0%, #3e1605 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- TARJETA PRINCIPAL --- */
+.login-card {
+    background: #ffffff;
+    width: 90%;
+    max-width: 850px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 50px 40px;
+    align-items: center;
+    gap: 20px;
+    z-index: 2;
+    position: relative;
+}
+
+/* --- COLUMNA IZQUIERDA: TU IMAGEN CENTRADA --- */
+.illustration-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    width: 100%;
+}
+
+.bg-circle {
+    width: 240px;
+    height: 240px;
+    background: #fdf5f0; /* Fondo circular con un sutil tinte cálido */
+    border-radius: 50%;
+    position: absolute;
+    z-index: 1;
+    box-shadow: 0 10px 25px rgba(255, 115, 0, 0.15);
+    animation: pulseBg 4s ease-in-out infinite alternate;
+}
+
+/* Estilo interactivo, completamente redondo y adaptado para tu logotipo */
+.user-image {
+    width: 230px;               /* Dimensión perfecta para ocupar el círculo */
+    height: 230px;              /* Alto simétrico para asegurar una circunferencia perfecta */
+    object-fit: cover;          /* Obliga a la imagen a rellenar el espacio sin deformarse */
+    border-radius: 50%;         /* Recorta el fondo cuadrado blanco automáticamente */
+    border: 4px solid #ffffff;  /* Elegante contorno blanco para resaltar el logo */
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    animation: floatImage 3s ease-in-out infinite alternate;
+}
+
+/* --- FIGURAS GEOMÉTRICAS FLOTANTES (Cálidas) --- */
+.shape {
+    position: absolute;
+    z-index: 3;
+    opacity: 0.8;
+}
+
+.shape-triangle-green {
+    top: 20%; right: 10%;
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 14px solid #ff7300; /* Triángulo Naranja */
+    transform: rotate(45deg);
+    animation: floatShape1 4s ease-in-out infinite alternate;
+}
+
+.shape-triangle-green-down {
+    bottom: 20%; left: 10%;
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 14px solid #ffa100; /* Triángulo Ámbar */
+    transform: rotate(180deg);
+    animation: floatShape2 3.5s ease-in-out infinite alternate;
+}
+
+.shape-circle-blue {
+    top: 30%; left: 12%;
+    width: 12px; height: 12px;
+    border: 3px solid #ff5500; /* Círculo Mandarina */
+    border-radius: 50%;
+    animation: floatShape2 5s ease-in-out infinite alternate;
+}
+
+.shape-circle-blue-small {
+    bottom: 25%; right: 18%;
+    width: 10px; height: 10px;
+    border: 2px solid #ffa100;
+    border-radius: 50%;
+    animation: floatShape1 3s ease-in-out infinite alternate;
+}
+
+.shape-square-gray {
+    top: 15%; left: 45%;
+    width: 10px; height: 10px;
+    border: 2px solid #ced4da;
+    transform: rotate(15deg);
+    animation: rotateShape 6s linear infinite;
+}
+
+/* --- COLUMNA DERECHA: FORMULARIO --- */
+.form-container {
+    padding: 0 20px;
+}
+
+h2 {
+    text-align: center;
+    color: #333333;
+    font-size: 28px;
+    margin-bottom: 35px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-group svg {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    fill: #666666;
+    transition: fill 0.3s ease;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 16px 85px 16px 55px; /* Espaciado extra a la derecha para que el texto no tape el botón */
+    background: #e9ecef;
+    border: 2px solid transparent;
+    border-radius: 50px;
+    font-size: 16px;
+    color: #333333;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-group input::placeholder {
+    color: #888888;
+}
+
+/* Foco del input adaptado al Naranja Cálido */
+.input-group input:focus {
+    background: #ffffff;
+    border-color: #ff7300;
+    box-shadow: 0 5px 15px rgba(255, 115, 0, 0.15);
+}
+
+.input-group input:focus ~ svg {
+    fill: #ff7300;
+}
+
+/* Botón Mostrar integrado perfectamente dentro del input gris */
+.toggle-password {
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #888888;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+    z-index: 3; /* Se mantiene al frente sobre el input */
+}
+
+.toggle-password:hover {
+    color: #ff7300;
+}
+
+/* Botón de envío ACCESO estilizado en Naranja */
+.btn-submit {
+    width: 100%;
+    padding: 16px;
+    background: #ff7300;
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(255, 115, 0, 0.3);
+    margin-top: 10px;
+}
+
+.btn-submit:hover {
+    background: #e56700;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 115, 0, 0.4);
+}
+
+.forgot-link {
+    display: block;
+    text-align: center;
+    margin-top: 25px;
+    color: #888888;
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.3s;
+    line-height: 1.5;
+}
+
+.forgot-link:hover {
+    color: #ff7300; /* Enlace inferior cambia a naranja */
+    text-decoration: underline;
+}
+
+.error-msg {
+    color: #d9534f;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 15px;
+    display: none;
+}
+
+/* --- INTERACCIONES DE ANIMACIÓN (KEYFRAMES) --- */
+@keyframes floatImage {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-10px); }
+}
+
+@keyframes pulseBg {
+    0% { transform: scale(1); opacity: 0.9; }
+    100% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes floatShape1 {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(-15px) rotate(15deg); }
+}
+
+@keyframes floatShape2 {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(12px) rotate(-15px); }
+}
+
+@keyframes rotateShape {
+    100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .login-card {
+        grid-template-columns: 1fr;
+        padding: 40px 20px;
+    }
+    .illustration-container {
+        display: none;
+    }
+}
