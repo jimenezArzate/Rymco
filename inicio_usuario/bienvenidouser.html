@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIAI Rymco - Control de Inventarios</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <!-- Tu configuración de Firebase -->
+    <script src="../firebase-config.js"></script>
+</head>
+<body>
+
+    <nav class="main-navbar-admin">
+        <div class="nav-tabs-container">
+            <button class="tab-btn active" data-target="section-inicio">Inicio Panel</button>
+            <button class="tab-btn" data-target="section-bitacora">Bitácora Diaria</button>
+            <button class="tab-btn" data-target="section-tuberia">Tubería Conduit</button>
+            <button class="tab-btn" data-target="section-calculo">Cálculo de Pesos</button>
+            <button class="tab-btn" data-target="section-historial">Historial Registros</button>
+            <button class="tab-btn" data-target="section-turnos">Turnos y Procesos</button>
+            <button class="tab-btn" data-target="section-pdf">Reportes PDF</button>
+            <button class="tab-btn" data-target="section-config">Configuración Sistema</button>
+        </div>
+    </nav>
+
+    <div id="app-container" class="container">
+        
+        <!-- MÓDULO: INICIO (DASHBOARD) -->
+        <section id="section-inicio" class="app-section" style="display: block;">
+            <div class="dashboard-grid">
+                <!-- Welcome Card -->
+                <div class="dash-card welcome-card">
+                    <div class="welcome-content">
+                        <h3>¡Buen día, Operador!</h3>
+                        <p>Tienes un excelente ritmo hoy. Revisa tu bitácora de turnos y procesos para continuar tu labor.</p>
+                        <button class="btn-welcome">Ver Bitácora</button>
+                    </div>
+                </div>
+                
+                <!-- Chart Card -->
+                <div class="dash-card chart-card">
+                    <div class="chart-header">
+                        <h4>Rendimiento de Producción</h4>
+                        <div class="chart-tabs">
+                            <span class="active">Diario</span>
+                            <span>Semanal</span>
+                            <span>Mensual</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Mini KPI cards -->
+                <div class="dash-card kpi-card">
+                    <div class="kpi-icon kpi-purple">📦</div>
+                    <div class="kpi-info">
+                        <div class="kpi-value">1,200</div>
+                        <div class="kpi-label">Piezas Procesadas</div>
+                    </div>
+                </div>
+                <div class="dash-card kpi-card">
+                    <div class="kpi-icon kpi-red">⚖️</div>
+                    <div class="kpi-info">
+                        <div class="kpi-value">4,500 kg</div>
+                        <div class="kpi-label">Kilos Totales</div>
+                    </div>
+                </div>
+                <div class="dash-card kpi-card">
+                    <div class="kpi-icon kpi-blue">📈</div>
+                    <div class="kpi-info">
+                        <div class="kpi-value">95%</div>
+                        <div class="kpi-label">Eficiencia Turno</div>
+                    </div>
+                </div>
+
+                <!-- News & Notifications -->
+                <div class="dash-card news-card">
+                    <h4>Notificaciones del Sistema</h4>
+                    <ul class="news-list" id="user-news-list">
+                        <li>
+                            <span class="dot green"></span>
+                            <div class="news-text">
+                                <strong>Producción Aprobada</strong>
+                                <p>Se aprobó la producción del turno matutino exitosamente.</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="dot red"></span>
+                            <div class="news-text">
+                                <strong>Mantenimiento</strong>
+                                <p>Mantenimiento preventivo programado a las 15:00 hrs.</p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="dot yellow"></span>
+                            <div class="news-text">
+                                <strong>Actualización</strong>
+                                <p>Nueva especificación de 1/2" agregada al sistema.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Radar Chart / Alert Placeholder -->
+                <div class="dash-card alert-card">
+                    <h4>Alerta de Inventario</h4>
+                    <p>El stock de tubería E. Amarilla está bajando rápidamente. Se recomienda reportar al supervisor pronto.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MÓDULO: CAPTURA DEL OPERADOR (ENVÍO DIRECTO) -->
+        <section id="section-bitacora" class="app-section" style="display: none;">
+            <header class="corporate-header">
+                <div class="brand-badge">SIAI RYMCO</div>
+                <h1>Bitácora de Inventarios</h1>
+                <p>Control de Peso - Tubería Conduit</p>
+            </header>
+
+            <div class="form-card">
+                <div class="card-indicator"></div>
+                <form id="bitacora-form" class="professional-form">
+                    <div class="form-grid-layout">
+                        <!-- COLUMNA IZQUIERDA: DATOS DE PRODUCCIÓN -->
+                        <div class="form-column">
+                            <h3 class="form-section-title">🏭 Datos de Producción</h3>
+                            
+                            <div class="form-group">
+                                <label for="proceso">⚙️ Proceso / Categoría</label>
+                                <select id="proceso" required>
+                                    <option value="" disabled selected>Selecciona el proceso</option>
+                                    <option value="Selección, Limpieza, Flejado y Empaque">Selección, Limpieza, Flejado y Empaque</option>
+                                    <option value="Preparación y/o Acondicionamiento de venta">Preparación y/o Acondicionamiento de venta</option>
+                                    <option value="Conformado, Rimado y Pintura">Conformado, Rimado y Pintura</option>
+                                    <option value="Selección de tubo para re-galvanizar">Selección de tubo para re-galvanizar</option> 
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="producto">📦 Producto</label>
+                                <div class="autocomplete">
+                                    <input type="text" id="producto" placeholder="Ej. 1/2&quot; pesado..." autocomplete="off" required>
+                                    <div id="autocomplete-list" class="autocomplete-items"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="piezas">🔢 Número de Piezas</label>
+                                    <input type="number" id="piezas" min="1" placeholder="Ej. 100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="especificacion">📄 Especificación en Hoja</label>
+                                    <input type="text" id="especificacion" placeholder="Ej. 3/4 pesado">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- COLUMNA DERECHA: DATOS DEL TURNO -->
+                        <div class="form-column column-alt-bg">
+                            <h3 class="form-section-title">⏱️ Datos del Turno</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fecha">📅 Fecha (Día Anterior)</label>
+                                    <input type="date" id="fecha" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="turno">🕒 Turno</label>
+                                    <select id="turno" required>
+                                        <option value="" disabled selected>Selecciona un turno</option>
+                                        <option value="Mañana">Mañana</option>
+                                        <option value="Tarde">Tarde</option>
+                                        <option value="Noche">Noche</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="trabajador">👷 # Trabajador / Nombre</label>
+                                <div class="input-with-btn">
+                                    <input type="text" id="trabajador" placeholder="Ej. 1858">
+                                    <button type="button" id="btn-agregar-trabajador">+</button>
+                                </div>
+                            </div>
+
+                            <div id="trabajadores-lista-container" class="table-container-wrapper" style="display: none;">
+                                <div class="table-header-bar">
+                                    <span>Personal Asignado</span>
+                                </div>
+                                <table id="trabajadores-tabla" class="corporate-table compact-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Nombre</th>
+                                            <th>Hora</th>
+                                            <th style="text-align: center;">✕</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="trabajadores-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions-footer">
+                        <button type="submit" class="btn-submit btn-large">Registrar y Calcular</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="history-card">
+                <div class="history-header-panel">
+                    <h2>Historial de Hoy (Sesión Local)</h2>
+                    <div class="action-control-bar">
+                        <button type="button" id="btn-finalizar-turno" class="btn-action-send">
+                            💾 Finalizar Turno (Enviar Datos)
+                        </button>
+                    </div>
+                </div>
+                <div id="history-container-operador">
+                    <p class="empty-state">No hay registros capturados en este turno todavía.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Scripts Modulares -->
+    <script src="js/nav.js"></script>
+    <script src="js/bitacora.js"></script>
+    <script src="js/inicio.js"></script>
+<script type="module" src="historial.js"></script>
+</body>
+</html>
