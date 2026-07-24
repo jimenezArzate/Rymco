@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Rymco - Control de Inventario</title>
+    <link rel="stylesheet" href="admin_styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <!-- Tu configuración de Firebase -->
+    <script src="../firebase-config.js"></script>
+</head>
+<body class="dashboard-body">
+
+    <!-- Botón hamburguesa solo visible en móvil/tablet -->
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Abrir menú">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+    <!-- Overlay oscuro al abrir el menú en móvil -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="user-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </div>
+                <div class="user-name">Administrador<br><span>RYMCO S.A.</span></div>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="menu-label">MENÚ PRINCIPAL <span class="green-dot"></span></div>
+                <ul class="admin-nav-menu">
+                    <li class="admin-nav-item active" id="menu-inicio"><a href="#" class="admin-nav-link">Inicio Panel <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-bitacora"><a href="#" class="admin-nav-link">Bitácora Diaria <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-admin-vista"><a href="#" class="admin-nav-link">Control Inventario <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-recuperacion"><a href="#" class="admin-nav-link">Recuperación <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-historial"><a href="#" class="admin-nav-link">Registro de produccion <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-trabajadores"><a href="#" class="admin-nav-link">Trabajadores <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-mensajes"><a href="#" class="admin-nav-link">Mensajes y Avisos <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-reportes-pdf"><a href="#" class="admin-nav-link">Reportes PDF <span class="arrow">◀</span></a></li>
+                    <li class="admin-nav-item" id="menu-configuracion"><a href="#" class="admin-nav-link">Configuración Sistema <span class="arrow">◀</span></a></li>
+                </ul>
+                
+                <div class="sidebar-search">
+                    <div class="search-box">
+                        <span class="search-label">Buscar...</span>
+                        <input type="text" placeholder="">
+                        <button class="search-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+                <!-- ============================================================== -->
+                <!-- SECCIÓN: RECUPERACIÓN DE PROCESOS -->
+                <!-- ============================================================== -->
+                <div id="recuperacion-container" class="dashboard-container" style="display: none;">
+                    <header class="app-header">
+                        <h1>Recuperación de Procesos</h1>
+                        <p>Guarda y revisa los respaldos reales de recuperación por mes y semana.</p>
+                    </header>
+
+                    <div class="history-card" style="margin-bottom: 1rem;">
+                        <h2>Resumen actual de Recuperación</h2>
+                        <p style="margin: 0; color: #334155;">Kilos sincronizados desde la tabla de recuperación: <strong id="recuperacion-actual-kilos">0 kg</strong></p>
+                    </div>
+
+                    <div class="form-card" style="max-width: 900px; margin: 0 auto 2rem auto;">
+                        <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                            <div class="form-group" style="flex: 1 1 220px;">
+                                <label for="respaldo-mes">Mes</label>
+                                <select id="respaldo-mes" style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; outline: none; background-color: #F8FAFC;">
+                                    <option value="Enero">Enero</option>
+                                    <option value="Febrero">Febrero</option>
+                                    <option value="Marzo">Marzo</option>
+                                    <option value="Abril">Abril</option>
+                                    <option value="Mayo">Mayo</option>
+                                    <option value="Junio">Junio</option>
+                                    <option value="Julio">Julio</option>
+                                    <option value="Agosto">Agosto</option>
+                                    <option value="Septiembre">Septiembre</option>
+                                    <option value="Octubre">Octubre</option>
+                                    <option value="Noviembre">Noviembre</option>
+                                    <option value="Diciembre">Diciembre</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1 1 220px;">
+                                <label for="respaldo-semana">Semana</label>
+                                <select id="respaldo-semana" style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; outline: none; background-color: #F8FAFC;">
+                                    <option value="Semana 1">Semana 1</option>
+                                    <option value="Semana 2">Semana 2</option>
+                                    <option value="Semana 3">Semana 3</option>
+                                    <option value="Semana 4">Semana 4</option>
+                                    <option value="Semana 5">Semana 5</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1 1 240px; align-self: flex-end; display: flex; align-items: flex-end;">
+                                <button type="button" class="btn-submit" style="width: 100%; padding: 0.95rem 1.2rem; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700;" onclick="procesarRespaldoAdmin()">Guardar Respaldo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="history-card">
+                        <h2>Histórico de Recuperación</h2>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="selector-historico-admin">Semana guardada</label>
+                            <select id="selector-historico-admin" onchange="cargarTablaHistoricaAdmin()" style="width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; outline: none; background-color: #F8FAFC;">
+                                <option value="">-- Selecciona una semana guardada para revisar --</option>
+                            </select>
+                        </div>
+
+                        <div class="table-responsive" style="overflow-x:auto;">
+                            <table id="tabla-archivo-recuperacion" style="width: 100%; border-collapse: collapse; min-width: 620px;">
+                                <thead style="background: #1E2A3A; color: white;">
+                                    <tr>
+                                        <th style="padding: 12px; text-align: left;">Producto</th>
+                                        <th style="padding: 12px; text-align: center;">Piezas</th>
+                                        <th style="padding: 12px; text-align: center;">Kilos</th>
+                                        <th style="padding: 12px; text-align: left;">Sección</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; padding: 20px; color: #777;">Selecciona una semana archivada para visualizar el histórico de recuperación.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Top Nav -->
+            <header class="top-nav">
+                <div class="top-brand">Panel de Control - RYMCO S.A.</div>
+                <div class="top-actions">
+                    <div class="msg-icon" id="top-msg-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <span class="green-dot-top" id="top-msg-badge" style="display: none;">!</span>
+                        
+                        <!-- Panel Desplegable de Notificaciones -->
+                        <div class="notifications-dropdown" id="notifications-dropdown">
+                            <div class="notifications-header">
+                                <span>Notificaciones</span>
+                                <button id="btn-clear-notifications">Limpiar</button>
+                            </div>
+                            <div class="notifications-list" id="notifications-list">
+                                <div class="notification-empty">Cargando notificaciones...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="user-label">Administrador</span>
+                </div>
+            </header>
+
+                
+                <!-- INICIO PANEL -->
+                <div id="inicio-panel-container" class="dashboard-container" style="display: block;">
+                    <div class="dashboard-grid">
+                        <!-- ROW 1 -->
+                        <div class="dash-card stat-card">
+                            <div class="stat-title">INVENTARIO TOTAL <small>Piezas Activas</small></div>
+                            <div class="stat-value" id="dash-global-qty">0</div>
+                        </div>
+                        <div class="dash-card stat-card pie-card">
+                            <div class="stat-title">EFICIENCIA <small>Proceso Actual</small></div>
+                            <div class="pie-content">
+                                <div class="pie-chart"></div>
+                                <div class="pie-val" id="porcentaje-eficiencia">0%</div>
+                            </div>
+                        </div>
+                        <div class="dash-card stat-card">
+                            <div class="stat-title">PRODUCCIÓN <small>Peso Total</small></div>
+                            <div class="stat-value" id="dash-global-total">0 kg</div>
+                        </div>
+
+                        <!-- ROW 2: Grafica interactiva -->
+                        <div class="dash-card bar-chart-card span-2">
+                            <div class="stat-title">VOLUMEN DE PRODUCCIÓN DIARIO <small id="dash-chart-subtitle" style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: normal; margin-top: 4px;"></small></div>
+                            <div class="chart-placeholder" style="position: relative; height: 250px; width: 100%;">
+                                <canvas id="dashProduccionChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- ROW 3 -->
+                        <div class="dash-card pyramid-card">
+                            <div class="stat-title">FLUJO DE PROCESOS</div>
+                            <div class="chart-placeholder pyramid-chart-img">
+                                <div class="pyramid-wrapper">
+                                    <div class="pyramid-layer layer-1">Recuperación</div>
+                                    <div class="pyramid-layer layer-2">Selección</div>
+                                    <div class="pyramid-layer layer-3">Empaque</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 4: Clima en Ecatepec -->
+                        <div class="dash-card weather-card span-3">
+                            <div class="weather-content">
+                                <div class="weather-main">
+                                    <svg viewBox="0 0 24 24" fill="#F97316" width="40" height="40"><path d="M17.5 19c2.485 0 4.5-2.015 4.5-4.5 0-2.348-1.802-4.275-4.103-4.471C17.378 6.643 14.417 4 10.833 4 6.505 4 3 7.505 3 11.833c0 1.258.298 2.443.824 3.497C2.261 16.142 1 17.585 1 19.333 1 21.358 2.642 23 4.667 23h12.833z"/></svg>
+                                    <div class="weather-temp">20°<br><small>Ecatepec, EdoMex</small></div>
+                                </div>
+                                <div class="weather-days">
+                                    <div class="w-day">Operativo<br><span>Normal</span></div>
+                                    <div class="w-day">Turno<br><span>Matutino</span></div>
+                                    <div class="w-day">Estado<br><span>Yuuki v1.9.6</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BITACORA CONTAINER -->
+                <div id="app-container" class="dashboard-container" style="display: none;">
+                    <header class="corporate-header">
+                        <div class="brand-badge">SIAI RYMCO</div>
+                        <h1>Bitácora de Inventarios</h1>
+                        <p>Control de Peso - Tubería Conduit</p>
+                    </header>
+
+                    <div class="form-card">
+                        <div class="card-indicator"></div>
+                        <form id="bitacora-form" class="professional-form">
+                            <div class="form-grid-layout">
+                                <div class="form-column">
+                                    <h3 class="form-section-title">🏭 Datos de Producción</h3>
+                                    
+                                    <div class="form-group">
+                                        <label for="proceso">⚙️ Proceso / Categoría</label>
+                                        <select id="proceso" required>
+                                            <option value="" disabled selected>Selecciona el proceso</option>
+                                            <option value="Selección, Limpieza, Flejado y Empaque">Selección, Limpieza, Flejado y Empaque</option>
+                                            <option value="Preparación y/o Acondicionamiento de venta">Preparación y/o Acondicionamiento de venta</option>
+                                            <option value="Conformado, Rimado y Pintura">Conformado, Rimado y Pintura</option>
+                                            <option value="Selección de tubo para re-galvanizar">Selección de tubo para re-galvanizar</option> 
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="producto">📦 Producto</label>
+                                        <div class="autocomplete">
+                                            <input type="text" id="producto" placeholder="Ej. 1/2\" pesado..." autocomplete="off" required>
+                                            <div id="autocomplete-list" class="autocomplete-items"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="piezas">🔢 Número de Piezas</label>
+                                            <input type="number" id="piezas" min="1" placeholder="Ej. 100" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="especificacion">📄 Especificación en Hoja</label>
+                                            <input type="text" id="especificacion" placeholder="Ej. 3/4 pesado">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-column column-alt-bg">
+                                    <h3 class="form-section-title">⏱️ Datos del Turno</h3>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="fecha">📅 Fecha (Día Anterior)</label>
+                                            <input type="date" id="fecha" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="turno">🕒 Turno</label>
+                                            <select id="turno" required>
+                                                <option value="" disabled selected>Selecciona un turno</option>
+                                                <option value="Mañana">Mañana</option>
+                                                <option value="Tarde">Tarde</option>
+                                                <option value="Noche">Noche</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="trabajador">👷 # Trabajador / Nombre</label>
+                                        <div class="input-with-btn">
+                                            <input type="text" id="trabajador" placeholder="Ej. 1858">
+                                            <button type="button" id="btn-agregar-trabajador">+</button>
+                                        </div>
+                                    </div>
+
+                                    <div id="trabajadores-lista-container" class="table-container-wrapper" style="display: none;">
+                                        <table id="trabajadores-tabla" class="corporate-table compact-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Nombre</th>
+                                                    <th>Hora</th>
+                                                    <th style="text-align: center;">✕</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="trabajadores-tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions-footer">
+                                <button type="submit" class="btn-submit btn-large">✓ Registrar y Calcular</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="history-card">
+                        <div class="history-header-panel">
+                            <h2>Historial de Hoy (Sesión Local)</h2>
+                            <div class="action-control-bar">
+                                <button type="button" id="btn-finalizar-turno" class="btn-action-send">
+                                    💾 Finalizar Turno (Enviar Datos)
+                                </button>
+                            </div>
+                        </div>
+                        <div id="history-container-operador">
+                            <p class="empty-state">No hay registros capturados en este turno todavía.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADMIN CONTAINER -->
+                <div id="admin-container" class="dashboard-container" style="display: none;">
+                    <header class="app-header">
+                        <h1>Panel de Administrador</h1>
+                        <p>Vista general del inventario guardado</p>
+                    </header>
+                    <div class="history-card" style="margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 style="margin-bottom: 0;">Registros Guardados por Operadores</h2>
+                            <div>
+                                <button id="btn-admin-pasar-recuperacion" class="btn-submit" style="width: auto; padding: 0.5rem 1rem; margin-top: 0; background: var(--primary); margin-right: 10px;">➡️ Pasar a Recuperación</button>
+                                <button id="btn-admin-export-excel" class="btn-submit" style="width: auto; padding: 0.5rem 1rem; margin-top: 0; background: #107c41; margin-right: 10px;">📊 Descargar Excel</button>
+                                <button id="btn-admin-export-pdf" class="btn-submit" style="width: auto; padding: 0.5rem 1rem; margin-top: 0; background: #059669;">📄 Descargar PDF</button>
+                            </div>
+                        </div>
+                        
+                        <div id="admin-tables-container"></div>
+
+                        <!-- TOTALES POR TURNO -->
+                        <div id="admin-totales-turno-container" style="margin-top: 2rem; border-top: 2px solid var(--border); padding-top: 1.5rem;">
+                            <h3 style="margin-bottom: 1.2rem; color: #1e1b4b; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; font-weight: 700;">📊 TOTALES POR TURNO</h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;" id="admin-totales-turno-cards">
+                                <!-- Tarjetas de turno generadas dinámicamente -->
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; border-top: 2px solid var(--primary); background: #f0fdf4; padding: 1.5rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; color: var(--primary); font-weight: 700;">TOTAL GENERAL DEL DÍA:</h3>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Piezas: <span id="admin-total-piezas">0</span></div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">Kilos: <span id="admin-total-kilos">0 kg</span></div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: right; margin-top: 1.5rem;">
+                            <button id="btn-admin-clear" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; transition: all 0.2s;">🗑️ Limpiar Sistema (Nuevo Día)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HISTORIAL CONTAINER (Menú con Pestañas) -->
+                <div id="historial-container" class="dashboard-container" style="display: none;">
+                    
+                    <!-- Selector de Tabla (Dropdown para móviles o pantallas pequeñas) -->
+                    <div class="historial-selector-wrapper">
+                        <select id="historial-tab-select" class="historial-tab-select">
+                            <option value="tab-inicio">📊 Inicio (Gráfica)</option>
+                            <option value="tab-datos-semanales">🗓️ Datos Semanales</option>
+                            <option value="tab-recuperacion">🔄 Recuperación</option>
+                            <option value="tab-tabla1">🔧 Acondicionamiento</option>
+                            <option value="tab-tabla2">📐 Conformado</option>
+                            <option value="tab-tabla3">⚡ Re-Galvanizar</option>
+                        </select>
+                    </div>
+
+                    <!-- Pestañas Internas -->
+                    <div class="historial-tabs">
+                        <button class="historial-tab-btn active" data-tab="tab-inicio">Inicio</button>
+                        <button class="historial-tab-btn" data-tab="tab-datos-semanales">Datos Semanales</button>
+                        <button class="historial-tab-btn" data-tab="tab-recuperacion">Recuperación</button>
+                        <button class="historial-tab-btn" data-tab="tab-tabla1">Acondicionamiento</button>
+                        <button class="historial-tab-btn" data-tab="tab-tabla2">Conformado</button>
+                        <button class="historial-tab-btn" data-tab="tab-tabla3">Re-Galvanizar</button>
+                    </div>
+
+                    <!-- Contenidos de las Pestañas -->
+
+                    <!-- TAB 1: Inicio (Gráfica) -->
+                    <div id="tab-inicio" class="historial-tab-content active">
+                        <div class="historial-wrapper">
+                            <h1>Nivel de Producción</h1>
+                            <div class="subtitle" id="historial-chart-subtitle">(Resumen General del Día)</div>
+                            <div class="chart-container-inicio">
+                                <canvas id="historialProduccionChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Datos Semanales -->
+                    <div id="tab-datos-semanales" class="historial-tab-content">
+                        <div class="page-title">Datos de Producción Semanal</div>
+                        <div class="page-sub">Lunes a Sábado — Totales por turno y día</div>
+
+                        <!-- TOOLBAR -->
+                        <div class="toolbar">
+                            <!-- Month picker -->
+                            <div style="position:relative; display: inline-block;">
+                                <button class="picker-btn" id="btn-abrir-mes">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span id="mes-label-display">Seleccionar mes</span>
+                                    <span>&#9660;</span>
+                                </button>
+                                <div class="picker-popup" id="mes-picker-popup">
+                                    <div class="year-nav">
+                                        <button id="btn-anio-prev">&#8249;</button>
+                                        <span id="anio-display"></span>
+                                        <button id="btn-anio-next">&#8250;</button>
+                                    </div>
+                                    <div class="month-grid" id="meses-grid"></div>
+                                    <input type="hidden" id="mes-selector" value="">
+                                </div>
+                            </div>
+
+                            <!-- Week picker -->
+                            <div style="position:relative; display: inline-block;">
+                                <button class="picker-btn" id="btn-abrir-semana">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <span id="semana-label-display">Seleccionar semana</span>
+                                    <span>&#9660;</span>
+                                </button>
+                                <div class="picker-popup" id="semana-picker-popup">
+                                    <div class="week-list" id="semanas-lista"></div>
+                                </div>
+                            </div>
+
+                            <button id="btn-pasar-a-semanal" class="btn btn-success" style="padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.82rem; border: none; background: #15803d; color: white;">📊 Transferir datos</button>
+                            <button id="btn-vaciar-tablas" class="btn btn-danger" style="padding: 0.45rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.82rem; border: none; background: #b91c1c; color: white;">🗑️ Vaciar vista</button>
+                        </div>
+
+                        <!-- TABLE + TOTALS -->
+                        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start;">
+                            <div class="tbl-wrap" style="flex:1;min-width:580px;">
+                                <table class="prod-table" id="tabla-semanal">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2">Día</th>
+                                            <th rowspan="2">Fecha</th>
+                                            <th colspan="2">1er. Turno</th>
+                                            <th colspan="2">2do. Turno</th>
+                                            <th colspan="2">3er. Turno</th>
+                                            <th colspan="2" class="th-total">Total Día</th>
+                                        </tr>
+                                        <tr>
+                                            <th>Pz</th><th>Kg</th>
+                                            <th>Pz</th><th>Kg</th>
+                                            <th>Pz</th><th>Kg</th>
+                                            <th class="th-total">Pz</th>
+                                            <th class="th-total">Kg</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="semanal-body">
+                                        <!-- empty until week selected -->
+                                    </tbody>
+                                </table>
+                                <!-- Empty hint shown when no week is selected -->
+                                <div id="semanal-empty-hint" class="empty-hint">
+                                    <strong>Tabla vacía</strong>
+                                    Seleccione un mes y una semana para ver los datos de producción.
+                                </div>
+                            </div>
+
+                            <div class="totals-side">
+                                <div class="total-card">
+                                    <div class="total-card-label">Pz (semana)</div>
+                                    <div class="total-card-value" id="semanal-total-pz">0</div>
+                                </div>
+                                <div class="total-card">
+                                    <div class="total-card-label">Kg (semana)</div>
+                                    <div class="total-card-value" id="semanal-total-kg">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AVERAGES -->
+                        <div class="avg-container-grid" style="display: flex; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; width: 100%;">
+                            
+                            <!-- TABLA 1: Promedios de la Semana Seleccionada (por Turno) -->
+                            <div class="avg-section" style="flex: 1; min-width: 300px;">
+                                <h3 style="color: var(--primary); font-size: 1rem; margin-bottom: 0.75rem; border-bottom: 2px solid var(--primary); padding-bottom: 4px; display: inline-block;">🗓️ Promedios de la Semana (por Turno)</h3>
+                                <div class="tbl-wrap" style="box-shadow: var(--shadow-sm); border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden;">
+                                    <table class="avg-table-weekly" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
+                                        <thead>
+                                            <tr style="background: #1E2A3A; color: white;">
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em;">Turno</th>
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; text-align: center;">Prom. Pz / día</th>
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; text-align: center;">Prom. Kg / día</th>
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; text-align: center;">Eficiencia (Pz ÷ Kg)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="promedios-semanales-body">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">Seleccione una semana para calcular</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- TABLA 2: Promedios del Mes Completo (por Semana) -->
+                            <div class="avg-section" style="flex: 1; min-width: 300px;">
+                                <h3 style="color: #059669; font-size: 1rem; margin-bottom: 0.75rem; border-bottom: 2px solid #059669; padding-bottom: 4px; display: inline-block;">📊 Promedios del Mes Completo (por Semana)</h3>
+                                <div class="tbl-wrap" style="box-shadow: var(--shadow-sm); border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden;">
+                                    <table class="avg-table-monthly" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
+                                        <thead>
+                                            <tr style="background: #064E3B; color: white;">
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em;">Semana</th>
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; text-align: center;">Total Piezas</th>
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; text-align: center;">Total Kilos</th>
+                                                <th style="padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; text-align: center;">Prom. Diario</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="promedios-mensuales-body">
+                                            <tr>
+                                                <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted);">Seleccione un mes para calcular</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot id="promedios-mensuales-foot" style="display: none;">
+                                            <tr style="background: #D1FAE5; font-weight: 700; border-top: 2px solid #059669;">
+                                                <td style="padding: 10px 14px; color: #065F46; font-size: 0.82rem;">TOTAL MENSUAL</td>
+                                                <td id="avg-monthly-total-pz" style="text-align: center; padding: 10px 14px; color: #065F46; font-size: 0.82rem;">0</td>
+                                                <td id="avg-monthly-total-kg" style="text-align: center; padding: 10px 14px; color: #065F46; font-size: 0.82rem;">0.000</td>
+                                                <td id="avg-monthly-global-prom" style="text-align: center; padding: 10px 14px; color: #065F46; background: #A7F3D0; font-size: 0.82rem;">0.0</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Recuperación (Material Re-Galvanizado) -->
+                    <div id="tab-recuperacion" class="historial-tab-content">
+                        <div class="historial-wrapper">
+                            <h1>Recuperación</h1>
+                            <div class="subtitle">(Material Re-Galvanizado)</div>
+
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Producto / Material</th>
+                                            <th style="text-align: center; width: 150px;">Cantidad (Pz)</th>
+                                            <th class="numeric" style="width: 150px;">Total (Kg)</th>
+                                        </tr>
+                                    </thead>
+                                    
+                                    <tbody id="inventory-body"></tbody>
+                                    
+                                    <tfoot>
+                                        <tr class="total-global-row">
+                                            <td>TOTAL GENERAL PROCESO:</td>
+                                            <td id="global-qty" style="text-align: center;">0</td>
+                                            <td id="global-total" class="numeric">0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: Acondicionamiento (Tabla 1) -->
+                    <div id="tab-tabla1" class="historial-tab-content">
+                        <div class="historial-wrapper">
+                            <h1>Acondicionamiento General</h1>
+                            <div class="subtitle">Preparación y/o Acondicionamiento de venta</div>
+
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Producto / Material</th>
+                                            <th style="text-align: center; width: 150px;">Cantidad (Pz)</th>
+                                            <th class="numeric" style="width: 150px;">Total (Kg)</th>
+                                        </tr>
+                                    </thead>
+                                    
+                                    <tbody id="acondicionamiento-body"></tbody>
+                                    
+                                    <tfoot>
+                                        <tr class="total-global-row">
+                                            <td>TOTAL GENERAL PROCESO:</td>
+                                            <td id="acond-global-qty" style="text-align: center;">0</td>
+                                            <td id="acond-global-total" class="numeric">0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: Conformado (Tabla 2) -->
+                    <div id="tab-tabla2" class="historial-tab-content">
+                        <div class="historial-wrapper">
+                            <h1>Conformado</h1>
+                            <div class="subtitle">Conformado, Rimado y Pintura</div>
+
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Producto / Material</th>
+                                            <th style="text-align: center; width: 150px;">Cantidad (Pz)</th>
+                                            <th class="numeric" style="width: 150px;">Total (Kg)</th>
+                                        </tr>
+                                    </thead>
+                                    
+                                    <tbody id="conformado-body"></tbody>
+                                    
+                                    <tfoot>
+                                        <tr class="total-global-row">
+                                            <td>TOTAL GENERAL PROCESO:</td>
+                                            <td id="conformado-global-qty" style="text-align: center;">0</td>
+                                            <td id="conformado-global-total" class="numeric">0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: Re-Galvanizar (Tabla 3) -->
+                    <div id="tab-tabla3" class="historial-tab-content">
+                        <div class="historial-wrapper">
+                            <h1>Re-Galvanizar</h1>
+                            <div class="subtitle">Selección de tubo para re-galvanizar</div>
+
+                            <div class="table-responsive">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Producto / Material</th>
+                                            <th style="text-align: center; width: 150px;">Cantidad (Pz)</th>
+                                            <th class="numeric" style="width: 150px;">Total (Kg)</th>
+                                        </tr>
+                                    </thead>
+                                    
+                                    <tbody id="regalvanizar-body"></tbody>
+                                    
+                                    <tfoot>
+                                        <tr class="total-global-row">
+                                            <td>TOTAL GENERAL PROCESO:</td>
+                                            <td id="regalvanizar-global-qty" style="text-align: center;">0</td>
+                                            <td id="regalvanizar-global-total" class="numeric">0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONFIGURACION CONTAINER -->
+                <div id="configuracion-container" class="dashboard-container" style="display: none;">
+                    <header class="app-header">
+                        <h1>Configuración del Sistema</h1>
+                        <p>Administra los parámetros y herramientas del sistema RYMCO</p>
+                    </header>
+                    <input type="text" id="config-search" placeholder="🔍 Buscar una configuración..." class="config-search-input">
+
+                    <div class="config-modules-grid">
+
+                        <!-- Módulo 1: Datos de la Empresa -->
+                        <div class="config-module-card" data-label="datos empresa nombre rfc nit dirección contacto" onclick="abrirModal('modal-empresa')">
+                            <div class="config-module-icon" style="background: linear-gradient(135deg,#1E2A3A,#374151);">🏢</div>
+                            <div class="config-module-info">
+                                <h3>Datos de la Empresa</h3>
+                                <p>Nombre, NIT/RFC, dirección y contacto de RYMCO</p>
+                            </div>
+                            <span class="config-module-arrow">›</span>
+                        </div>
+
+                        <!-- Módulo 2: Gestión de Operadores -->
+                        <div class="config-module-card" data-label="operadores trabajadores personal gestión alta baja" onclick="abrirModal('modal-operadores')">
+                            <div class="config-module-icon" style="background: linear-gradient(135deg,#EA580C,#F97316);">👥</div>
+                            <div class="config-module-info">
+                                <h3>Gestión de Operadores</h3>
+                                <p>Agregar, activar o dar de baja operadores del sistema</p>
+                            </div>
+                            <span class="config-module-arrow">›</span>
+                        </div>
+
+                        <!-- Módulo 3: Exportar a CSV/Excel -->
+                        <div class="config-module-card" data-label="exportar csv excel descargar producción datos reporte" onclick="abrirModal('modal-exportar')">
+                            <div class="config-module-icon" style="background: linear-gradient(135deg,#059669,#10B981);">📊</div>
+                            <div class="config-module-info">
+                                <h3>Exportar Datos a Excel</h3>
+                                <p>Descarga registros de producción en formato CSV / Excel</p>
+                            </div>
+                            <span class="config-module-arrow">›</span>
+                        </div>
+
+                        <!-- Módulo 4: Cambiar Contraseña -->
+                        <div class="config-module-card" data-label="contraseña password seguridad cambiar admin acceso" onclick="abrirModal('modal-password')">
+                            <div class="config-module-icon" style="background: linear-gradient(135deg,#7C3AED,#A78BFA);">🔒</div>
+                            <div class="config-module-info">
+                                <h3>Cambiar Contraseña</h3>
+                                <p>Actualiza la contraseña de la cuenta de administrador</p>
+                            </div>
+                            <span class="config-module-arrow">›</span>
+                        </div>
+
+                        <!-- Módulo 5: Vaciar Datos -->
+                        <div class="config-module-card config-module-danger" data-label="vaciar borrar limpiar datos registros reset" onclick="abrirModal('modal-vaciar')">
+                            <div class="config-module-icon" style="background: linear-gradient(135deg,#DC2626,#EF4444);">🗑️</div>
+                            <div class="config-module-info">
+                                <h3>Vaciar Datos del Sistema</h3>
+                                <p>Elimina todos los registros y reinicia el sistema</p>
+                            </div>
+                            <span class="config-module-arrow">›</span>
+                        </div>
+
+                    </div><!-- /.config-modules-grid -->
+                </div>
+
+                <!-- ═══════════════════════════════════════════════
+                     MODALES DE CONFIGURACIÓN
+                ════════════════════════════════════════════════ -->
+
+                <!-- MODAL: Datos de la Empresa -->
+                <div id="modal-empresa" class="cfg-modal-overlay" style="display:none;">
+                    <div class="cfg-modal">
+                        <div class="cfg-modal-header">
+                            <span>🏢 Datos de la Empresa</span>
+                            <button class="cfg-modal-close" onclick="cerrarModal('modal-empresa')">✕</button>
+                        </div>
+                        <div class="cfg-modal-body">
+                            <div class="form-group">
+                                <label>Nombre de la Empresa</label>
+                                <input type="text" id="emp-nombre" placeholder="Ej. RYMCO S.A. de C.V.">
+                            </div>
+                            <div class="form-row-two">
+                                <div class="form-group">
+                                    <label>NIT / RFC</label>
+                                    <input type="text" id="emp-rfc" placeholder="Ej. RYM-950130-AB1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Teléfono</label>
+                                    <input type="tel" id="emp-telefono" placeholder="Ej. +52 333 000 0000">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Dirección</label>
+                                <input type="text" id="emp-direccion" placeholder="Ej. Blvd. Industrial #45, Guadalajara, Jal.">
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Electrónico</label>
+                                <input type="email" id="emp-correo" placeholder="Ej. contacto@rymco.com.mx">
+                            </div>
+                        </div>
+                        <div class="cfg-modal-footer">
+                            <button class="btn-secondary" onclick="cerrarModal('modal-empresa')">Cancelar</button>
+                            <button class="btn-submit" style="width:auto;" onclick="guardarDatosEmpresa()">💾 Guardar Cambios</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL: Gestión de Operadores -->
+                <div id="modal-operadores" class="cfg-modal-overlay" style="display:none;">
+                    <div class="cfg-modal cfg-modal-lg">
+                        <div class="cfg-modal-header">
+                            <span>👥 Gestión de Operadores</span>
+                            <button class="cfg-modal-close" onclick="cerrarModal('modal-operadores')">✕</button>
+                        </div>
+                        <div class="cfg-modal-body">
+                            <!-- Formulario agregar operador -->
+                            <div class="cfg-sub-card">
+                                <h4>Agregar Nuevo Operador</h4>
+                                <div class="form-row-two">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Nombre Completo</label>
+                                        <input type="text" id="op-nombre" placeholder="Ej. Juan García López">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label>Turno por Defecto</label>
+                                        <select id="op-turno">
+                                            <option value="Mañana">🌅 Mañana</option>
+                                            <option value="Tarde">🌇 Tarde</option>
+                                            <option value="Noche">🌙 Noche</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button class="btn-submit" style="width:auto; margin-top:12px;" onclick="agregarOperador()">➕ Agregar Operador</button>
+                            </div>
+                            <!-- Tabla operadores activos -->
+                            <h4 style="margin: 1rem 0 0.5rem; font-size:0.95rem; color:var(--text-main);">Operadores Registrados</h4>
+                            <div style="max-height:240px; overflow-y:auto; border:1.5px solid var(--border); border-radius:8px;">
+                                <table style="width:100%; border-collapse:collapse; text-align:left;">
+                                    <thead style="background:#1E2A3A; color:#fff; position:sticky; top:0; z-index:5;">
+                                        <tr>
+                                            <th style="padding:10px 14px; font-size:0.72rem; text-transform:uppercase;">Nombre</th>
+                                            <th style="padding:10px 14px; font-size:0.72rem; text-transform:uppercase;">Turno</th>
+                                            <th style="padding:10px 14px; font-size:0.72rem; text-transform:uppercase;">Estado</th>
+                                            <th style="padding:10px 14px; font-size:0.72rem; text-transform:uppercase; text-align:center;">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-operadores">
+                                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem;">Cargando operadores...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="cfg-modal-footer">
+                            <button class="btn-secondary" onclick="cerrarModal('modal-operadores')">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL: Exportar CSV -->
+                <div id="modal-exportar" class="cfg-modal-overlay" style="display:none;">
+                    <div class="cfg-modal">
+                        <div class="cfg-modal-header">
+                            <span>📊 Exportar Datos a Excel</span>
+                            <button class="cfg-modal-close" onclick="cerrarModal('modal-exportar')">✕</button>
+                        </div>
+                        <div class="cfg-modal-body">
+                            <div class="form-group">
+                                <label>Tipo de Datos</label>
+                                <select id="export-tipo">
+                                    <option value="registros_produccion">Registros de Producción</option>
+                                    <option value="historial_mensual">Historial Mensual</option>
+                                    <option value="anuncios_sistema">Avisos del Sistema</option>
+                                    <option value="correos_enviados">Correos Enviados</option>
+                                </select>
+                            </div>
+                            <div class="form-row-two">
+                                <div class="form-group">
+                                    <label>Desde</label>
+                                    <input type="date" id="export-desde">
+                                </div>
+                                <div class="form-group">
+                                    <label>Hasta</label>
+                                    <input type="date" id="export-hasta">
+                                </div>
+                            </div>
+                            <div id="export-preview" style="display:none; background:#F8FAFC; border:1.5px solid var(--border); border-radius:8px; padding:12px; font-size:0.83rem; color:var(--text-muted); margin-top: 8px;">
+                                Vista previa: <strong id="export-count">0</strong> registros encontrados para exportar.
+                            </div>
+                        </div>
+                        <div class="cfg-modal-footer">
+                            <button class="btn-secondary" onclick="cerrarModal('modal-exportar')">Cancelar</button>
+                            <button class="btn-submit" style="width:auto; background:linear-gradient(135deg,#059669,#10B981);" onclick="exportarCSV()" id="btn-exportar-csv">📥 Descargar CSV</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL: Cambiar Contraseña -->
+                <div id="modal-password" class="cfg-modal-overlay" style="display:none;">
+                    <div class="cfg-modal">
+                        <div class="cfg-modal-header">
+                            <span>🔒 Cambiar Contraseña</span>
+                            <button class="cfg-modal-close" onclick="cerrarModal('modal-password')">✕</button>
+                        </div>
+                        <div class="cfg-modal-body">
+                            <div class="form-group">
+                                <label>Contraseña Actual</label>
+                                <input type="password" id="pwd-actual" placeholder="Tu contraseña actual">
+                            </div>
+                            <div class="form-group">
+                                <label>Nueva Contraseña</label>
+                                <input type="password" id="pwd-nueva" placeholder="Mínimo 6 caracteres">
+                            </div>
+                            <div class="form-group">
+                                <label>Confirmar Nueva Contraseña</label>
+                                <input type="password" id="pwd-confirmar" placeholder="Repite la nueva contraseña">
+                            </div>
+                            <div id="pwd-mensaje" style="display:none; padding:10px 14px; border-radius:8px; font-size:0.85rem; font-weight:600; margin-top:8px;"></div>
+                        </div>
+                        <div class="cfg-modal-footer">
+                            <button class="btn-secondary" onclick="cerrarModal('modal-password')">Cancelar</button>
+                            <button class="btn-submit" style="width:auto; background:linear-gradient(135deg,#7C3AED,#A78BFA);" onclick="cambiarContrasena()" id="btn-cambiar-pwd">🔑 Actualizar Contraseña</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL: Vaciar Datos (confirmación doble) -->
+                <div id="modal-vaciar" class="cfg-modal-overlay" style="display:none;">
+                    <div class="cfg-modal">
+                        <div class="cfg-modal-header" style="background:linear-gradient(135deg,#DC2626,#EF4444);">
+                            <span>⚠️ Vaciar Datos del Sistema</span>
+                            <button class="cfg-modal-close" style="color:white;" onclick="cerrarModal('modal-vaciar')">✕</button>
+                        </div>
+                        <div class="cfg-modal-body" style="text-align:center;">
+                            <div style="font-size:3.5rem; margin-bottom:1rem;">🗑️</div>
+                            <h3 style="color:#DC2626; margin-bottom:0.5rem;">¡Acción Destructiva!</h3>
+                            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">Esto eliminará <strong>todos los registros de producción</strong> del almacenamiento local. Esta acción no se puede deshacer.</p>
+                            <p style="font-size:0.87rem; color:var(--text-main); margin-bottom: 0.5rem;">Para confirmar, escribe <strong>"VACIAR"</strong> en el campo:</p>
+                            <input type="text" id="vaciar-confirm-input" placeholder="Escribe VACIAR para confirmar" style="width:100%; max-width:280px; padding:10px 14px; border:2px solid #EF4444; border-radius:8px; font-size:0.95rem; text-align:center; font-weight:700; color:#DC2626; outline:none; letter-spacing:2px;">
+                        </div>
+                        <div class="cfg-modal-footer">
+                            <button class="btn-secondary" onclick="cerrarModal('modal-vaciar')">Cancelar</button>
+                            <button id="btn-vaciar-confirm" class="btn-submit" style="width:auto; background:#DC2626; opacity:0.4; cursor:not-allowed;" disabled onclick="ejecutarVaciarDatos()">🗑️ Sí, Vaciar Todo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPORTES PDF CONTAINER -->
+                <div id="reportes-pdf-container" class="dashboard-container" style="display: none;">
+                    <h1>Reportes PDF Mensuales</h1>
+                    <button onclick="generarReportePDF()" class="btn-submit" style="width: auto; margin-bottom: 20px; display: inline-block;">Generar Nuevo Reporte PDF</button>
+                    <div id="lista-pdfs" class="history-card">
+                        <h3>Reportes Generados</h3>
+                        <!-- Lista de reportes generados -->
+                    </div>
+                </div>
+
+                <!-- MENSAJES Y AVISOS CONTAINER -->
+                <div id="mensajes-panel-container" class="dashboard-container" style="display: none;">
+                    <header class="app-header">
+                        <h1>Mensajes y Avisos</h1>
+                        <p>Publica avisos para operadores o envía correos del sistema</p>
+                    </header>
+
+                    <div class="form-row">
+                        <!-- Columna izquierda: Crear aviso -->
+                        <div class="form-card" style="margin-bottom: 0;">
+                            <h3 style="margin-bottom: 1.25rem; font-weight: 700; color: var(--text-main); font-size: 1.1rem;">📢 Publicar Aviso a Operadores</h3>
+                            <form id="form-publicar-aviso">
+                                <div class="form-group">
+                                    <label for="aviso-titulo">Título del Aviso</label>
+                                    <input type="text" id="aviso-titulo" placeholder="Ej. Mantenimiento Preventivo" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="aviso-mensaje">Mensaje</label>
+                                    <textarea id="aviso-mensaje" placeholder="Escribe el mensaje aquí..." required style="width: 100%; min-height: 100px; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.92rem; background-color: #F8FAFC; color: var(--text-main); resize: vertical; outline: none; transition: all 0.2s;"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="aviso-nivel">Nivel de Alerta</label>
+                                    <select id="aviso-nivel" required>
+                                        <option value="green" selected>🟢 Informativo (Punto Verde)</option>
+                                        <option value="yellow">🟡 Advertencia (Punto Amarillo)</option>
+                                        <option value="red">🔴 Urgente / Alerta (Punto Rojo)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn-submit">Publicar Aviso</button>
+                            </form>
+                        </div>
+
+                        <!-- Columna derecha: Enviar correo -->
+                        <div class="form-card" style="margin-bottom: 0;">
+                            <h3 style="margin-bottom: 1.25rem; font-weight: 700; color: var(--text-main); font-size: 1.1rem;">📧 Enviar Correo Electrónico</h3>
+                            <form id="form-enviar-correo">
+                                <div class="form-group">
+                                    <label for="correo-destinatario">Destinatario</label>
+                                    <input type="email" id="correo-destinatario" placeholder="Ej. administrador@rymco.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="correo-asunto">Asunto</label>
+                                    <input type="text" id="correo-asunto" placeholder="Ej. Reporte Diario de Producción" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="correo-mensaje">Cuerpo del Correo</label>
+                                    <textarea id="correo-mensaje" placeholder="Escribe el contenido del correo aquí..." required style="width: 100%; min-height: 100px; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.92rem; background-color: #F8FAFC; color: var(--text-main); resize: vertical; outline: none; transition: all 0.2s;"></textarea>
+                                </div>
+                                <button type="submit" class="btn-submit" id="btn-enviar-correo-submit">Enviar Correo</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Avisos Activos -->
+                    <div class="history-card" style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; font-weight: 700; color: var(--text-main); font-size: 1.1rem;">Avisos Publicados Activos</h3>
+                        <div id="lista-anuncios-admin" class="table-responsive" style="max-height: 250px; overflow-y: auto; border: 1.5px solid var(--border); border-radius: 8px;">
+                            <table style="width:100%; border-collapse: collapse; text-align: left;">
+                                <thead style="background:#1E2A3A; color:#fff; position: sticky; top: 0; z-index: 10;">
+                                    <tr>
+                                        <th style="padding: 10px 14px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Nivel</th>
+                                        <th style="padding: 10px 14px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Título</th>
+                                        <th style="padding: 10px 14px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Mensaje</th>
+                                        <th style="padding: 10px 14px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Fecha</th>
+                                        <th style="padding: 10px 14px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; text-align: center; width: 100px;">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-anuncios-admin">
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">No hay avisos publicados.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRABAJADORES PANEL CONTAINER -->
+                <div id="trabajadores-panel-container" class="dashboard-container" style="display: none;">
+                    <header class="app-header">
+                        <h1>Trabajadores y Rendimiento</h1>
+                        <p>Visualiza el desempeño de tus operarios y gestiona la asistencia diaria</p>
+                    </header>
+
+                    <!-- Pestañas internas -->
+                    <div class="historial-tabs" style="margin-bottom: 1.5rem;">
+                        <button class="trabajadores-tab-btn active" data-tab="tab-rendimiento" style="border: none; padding: 0.75rem 1.5rem; cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.2s; border-radius: 8px; background: transparent; color: var(--text-muted);">📊 Rendimiento</button>
+                        <button class="trabajadores-tab-btn" data-tab="tab-asistencia" style="border: none; padding: 0.75rem 1.5rem; cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.2s; border-radius: 8px; background: transparent; color: var(--text-muted);">📅 Asistencia Diaria</button>
+                        <button class="trabajadores-tab-btn" data-tab="tab-consulta" style="border: none; padding: 0.75rem 1.5rem; cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.2s; border-radius: 8px; background: transparent; color: var(--text-muted);">🔍 Consulta Trabajador</button>
+                    </div>
+
+                    <!-- TAB 1: Rendimiento -->
+                    <div id="tab-rendimiento" class="trabajadores-tab-content">
+                        <div class="history-card" style="margin-bottom: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;">
+                                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Eficiencia y Producción de Operarios</h3>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <label for="rend-filtro-turno" style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Filtrar Turno:</label>
+                                    <select id="rend-filtro-turno" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1.5px solid var(--border); font-family: inherit; font-size: 0.85rem;">
+                                        <option value="todos">Todos los Turnos</option>
+                                        <option value="Mañana">🌅 Mañana</option>
+                                        <option value="Tarde">🌇 Tarde</option>
+                                        <option value="Noche">🌙 Noche</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive" style="overflow-x: auto; border: 1.5px solid var(--border); border-radius: 8px;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead style="background: #1E2A3A; color: white;">
+                                        <tr>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Trabajador / ID</th>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; text-align: center;">Registros</th>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; text-align: center;">Total Piezas</th>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; text-align: center;">Total Kilos</th>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; text-align: center;">Promedio Pz/Turno</th>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; width: 220px;">Desempeño Visual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-rendimiento-trabajadores">
+                                        <tr>
+                                            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem;">Calculando rendimiento desde la bitácora...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Asistencia -->
+                    <div id="tab-asistencia" class="trabajadores-tab-content" style="display: none;">
+                        <div class="history-card" style="margin-bottom: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;">
+                                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main);">Lista de Asistencia Diaria</h3>
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <label for="asistencia-fecha" style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Fecha:</label>
+                                    <input type="date" id="asistencia-fecha" style="padding: 0.45rem 0.8rem; border-radius: 6px; border: 1.5px solid var(--border); font-family: inherit; font-size: 0.85rem;">
+                                    <button id="btn-guardar-asistencia" class="btn-submit" style="width: auto; padding: 0.5rem 1rem; margin-top: 0; background: var(--primary);">💾 Guardar Asistencia</button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive" style="overflow-x: auto; border: 1.5px solid var(--border); border-radius: 8px;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead style="background: #1E2A3A; color: white;">
+                                        <tr>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Trabajador / ID</th>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Turno Fijo</th>
+                                            <th style="padding: 12px 16px; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; text-align: center; width: 340px;">Control de Asistencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-asistencia-trabajadores">
+                                        <tr>
+                                            <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem;">Cargando lista de asistencia de operarios...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Consulta Trabajador -->
+                    <div id="tab-consulta" class="trabajadores-tab-content" style="display: none;">
+                        <div class="history-card" style="margin-bottom: 2rem;">
+                            <!-- Buscador -->
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main); flex: 1;">🔍 Consulta de Trabajador</h3>
+                            </div>
+                            <div style="position: relative; margin-bottom: 1.5rem;">
+                                <input type="text" id="consulta-busqueda" placeholder="Escribe el nombre o ID del trabajador..." style="width: 100%; padding: 0.75rem 3rem 0.75rem 1rem; border-radius: 10px; border: 2px solid var(--border); font-family: inherit; font-size: 0.95rem; transition: border-color 0.2s;">
+                                <span style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; pointer-events: none;">🔎</span>
+                                <!-- Sugerencias autocomplete -->
+                                <div id="consulta-suggestions" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; max-height: 220px; overflow-y: auto;"></div>
+                            </div>
+
+                            <!-- Perfil del Trabajador -->
+                            <div id="consulta-resultado" style="display: none;">
+                                <!-- Cabecera del perfil -->
+                                <div style="display: flex; align-items: center; gap: 16px; padding: 20px; background: linear-gradient(135deg, #1E2A3A, #263447); border-radius: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                                    <div style="width: 60px; height: 60px; background: rgba(249,115,22,0.25); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0;">👷</div>
+                                    <div style="flex: 1;">
+                                        <div id="perfil-nombre" style="font-size: 1.1rem; font-weight: 700; color: white;">—</div>
+                                        <div id="perfil-turno" style="font-size: 0.82rem; color: rgba(255,255,255,0.5); margin-top: 3px;">—</div>
+                                    </div>
+                                    <div id="perfil-estado-badge" style="padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700;"></div>
+                                </div>
+
+                                <!-- KPIs de Asistencia -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 1.5rem;">
+                                    <div style="background: #dcfce7; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 16px; text-align: center;">
+                                        <div id="kpi-asistencias" style="font-size: 2rem; font-weight: 700; color: #15803d;">0</div>
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #166534; text-transform: uppercase; margin-top: 4px;">✅ Asistencias</div>
+                                    </div>
+                                    <div style="background: #fee2e2; border: 1.5px solid #fecaca; border-radius: 10px; padding: 16px; text-align: center;">
+                                        <div id="kpi-faltas" style="font-size: 2rem; font-weight: 700; color: #dc2626;">0</div>
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #991b1b; text-transform: uppercase; margin-top: 4px;">❌ Faltas</div>
+                                    </div>
+                                    <div style="background: #fef9c3; border: 1.5px solid #fde047; border-radius: 10px; padding: 16px; text-align: center;">
+                                        <div id="kpi-vacaciones" style="font-size: 2rem; font-weight: 700; color: #a16207;">0</div>
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #713f12; text-transform: uppercase; margin-top: 4px;">🏖️ Vacaciones</div>
+                                    </div>
+                                    <div style="background: #ede9fe; border: 1.5px solid #c4b5fd; border-radius: 10px; padding: 16px; text-align: center;">
+                                        <div id="kpi-pct-asistencia" style="font-size: 2rem; font-weight: 700; color: #6d28d9;">—%</div>
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #4c1d95; text-transform: uppercase; margin-top: 4px;">📈 % Asistencia</div>
+                                    </div>
+                                    <div style="background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 16px; text-align: center;">
+                                        <div id="kpi-produccion" style="font-size: 2rem; font-weight: 700; color: var(--primary);">0</div>
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #9a3412; text-transform: uppercase; margin-top: 4px;">🏭 Piezas Producidas</div>
+                                    </div>
+                                    <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 16px; text-align: center;">
+                                        <div id="kpi-kilos" style="font-size: 2rem; font-weight: 700; color: #16a34a;">0</div>
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #14532d; text-transform: uppercase; margin-top: 4px;">⚖️ Kg Producidos</div>
+                                    </div>
+                                </div>
+
+                                <!-- Historial de Reportes -->
+                                <div style="background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+                                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; display: flex; align-items: center; gap: 6px;">📋 Historial de Asistencia Reciente</h4>
+                                    <div id="consulta-historial-asistencia" style="display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Estado vacío -->
+                            <div id="consulta-vacio" style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+                                <div style="font-size: 3rem; margin-bottom: 12px;">🔍</div>
+                                <div style="font-weight: 700; color: #475569; margin-bottom: 6px; font-size: 1rem;">Busca un trabajador</div>
+                                <div style="font-size: 0.85rem;">Escribe el nombre o ID en el campo de búsqueda para ver su perfil completo.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="js/nav.js"></script>
+    <script src="js/recuperacion.js"></script>
+    <script src="js/inventario.js"></script>
+    <script src="js/bitacora.js"></script>
+    <script src="js/historial.js"></script>
+    <script src="js/configuracion.js"></script>
+    <script src="js/gestion_rymco.js"></script>
+    <script src="js/trabajadores.js"></script>
+    <script>
+    // ── Hamburguesa / Sidebar en móvil ──────────────────────────────
+    (function() {
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        const sidebar   = document.getElementById('sidebar');
+        const overlay   = document.getElementById('sidebar-overlay');
+
+        function openSidebar() {
+            sidebar.classList.add('sidebar-open');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('sidebar-open');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+        if (overlay)   overlay.addEventListener('click', closeSidebar);
+
+        // Cerrar automáticamente al hacer clic en un ítem del menú (móvil)
+        document.querySelectorAll('.admin-nav-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 900) closeSidebar();
+            });
+        });
+    })();
+    </script>
+</body>
+</html>
